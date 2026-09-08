@@ -21,7 +21,7 @@ export const ImpactView: React.FC = () => {
           </Tbody>
         </Table>
       </Card>
-      <div className="grid-3" style={{ marginTop: '16px', flexShrink: 0 }}>
+      <div className="grid-3 impact-summary-panel">
         <div className="module-card card"><h3>Most impacted</h3><p>Sales and Warehouse have the highest combined process, role and behavioral impact.</p></div>
         <div className="module-card card"><h3>Change volume</h3><p>12 processes · 8 roles · 3 systems affected.</p></div>
         <div className="module-card card"><h3>Assessment status</h3><p>86% of identified populations have been assessed.</p></div>

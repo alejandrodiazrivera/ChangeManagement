@@ -21,15 +21,15 @@ export const StakeholdersView: React.FC = () => {
           </Tbody>
         </Table>
       </Card>
-      <div className="grid-2" style={{ marginTop: '16px', flex: 1 }}>
+      <div className="grid-2 stakeholders-panel">
         <Card>
           <CardHeader><h2>Influence × Support</h2><span>Stakeholder map</span></CardHeader>
           <div className="matrix-grid">
             <div className="matrix-box">
-              <div className="dot" style={{ left: '75%', top: '25%' }}></div>
-              <div className="dot" style={{ left: '62%', top: '43%' }}></div>
-              <div className="dot" style={{ left: '38%', top: '68%' }}></div>
-              <div className="dot" style={{ left: '82%', top: '72%' }}></div>
+              <div className="dot stakeholder-dot--ceo"></div>
+              <div className="dot stakeholder-dot--sales"></div>
+              <div className="dot stakeholder-dot--warehouse"></div>
+              <div className="dot stakeholder-dot--finance"></div>
               <div className="axis-x">Low influence → High influence</div>
               <div className="axis-y">Support</div>
             </div>
@@ -37,7 +37,7 @@ export const StakeholdersView: React.FC = () => {
         </Card>
         <Card>
           <CardHeader><h2>Priority</h2><span>Requires attention</span></CardHeader>
-          <p style={{ fontSize: '13px', lineHeight: 1.6 }}>High-influence stakeholders with low or medium support should receive targeted engagement before the next rollout milestone.</p>
+          <p className="stakeholder-priority-copy">High-influence stakeholders with low or medium support should receive targeted engagement before the next rollout milestone.</p>
         </Card>
       </div>
     </>
