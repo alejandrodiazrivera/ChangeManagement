@@ -1,6 +1,6 @@
 import React from 'react';
 
-type BadgeColor = 'red' | 'yellow' | 'green' | 'gray' | 'purple' | 'sky' | 'pink' | 'orange';
+type BadgeColor = 'red' | 'yellow' | 'green' | 'gray' | 'purple' | 'sky' | 'blue' | 'pink' | 'orange';
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   color?: BadgeColor;

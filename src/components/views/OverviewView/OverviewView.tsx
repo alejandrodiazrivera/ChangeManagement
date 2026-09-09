@@ -38,7 +38,7 @@ export const OverviewView: React.FC = () => {
 
       <div className="grid-2">
         <Card>
-          <CardHeader><h2>Stakeholder Alignment</h2><span>Influence × Support</span></CardHeader>
+          <CardHeader><h2>Stakeholder Alignment</h2><span>Stakeholder Map</span></CardHeader>
           <Table>
             <Thead><Tr><Th>Stakeholder</Th><Th>Influence</Th><Th>Support</Th><Th>Engagement</Th><Th>Status</Th></Tr></Thead>
             <Tbody>

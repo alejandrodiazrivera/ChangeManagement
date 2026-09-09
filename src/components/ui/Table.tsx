@@ -1,16 +1,30 @@
 import React from 'react';
 
-interface TableProps {
+interface TableProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
 }
 
-export const Table: React.FC<TableProps> = ({ children, className = '' }) => {
-  return <div className={`table-wrap ${className}`}><table>{children}</table></div>;
+export const Table: React.FC<TableProps> = ({ children, className = '', ...props }) => {
+  return (
+    <div className={`table-wrap ${className}`} {...props}>
+      <table>{children}</table>
+    </div>
+  );
 };
 
-export const Thead: React.FC<{ children: React.ReactNode }> = ({ children }) => <thead>{children}</thead>;
-export const Tbody: React.FC<{ children: React.ReactNode }> = ({ children }) => <tbody>{children}</tbody>;
-export const Tr: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => <tr className={className}>{children}</tr>;
-export const Th: React.FC<{ children: React.ReactNode }> = ({ children }) => <th>{children}</th>;
-export const Td: React.FC<{ children: React.ReactNode }> = ({ children }) => <td>{children}</td>;
+export const Thead: React.FC<React.HTMLAttributes<HTMLTableSectionElement>> = ({ children, ...props }) => (
+  <thead {...props}>{children}</thead>
+);
+export const Tbody: React.FC<React.HTMLAttributes<HTMLTableSectionElement>> = ({ children, ...props }) => (
+  <tbody {...props}>{children}</tbody>
+);
+export const Tr: React.FC<React.HTMLAttributes<HTMLTableRowElement>> = ({ children, className = '', ...props }) => (
+  <tr className={className} {...props}>{children}</tr>
+);
+export const Th: React.FC<React.ThHTMLAttributes<HTMLTableCellElement>> = ({ children, ...props }) => (
+  <th {...props}>{children}</th>
+);
+export const Td: React.FC<React.TdHTMLAttributes<HTMLTableCellElement>> = ({ children, ...props }) => (
+  <td {...props}>{children}</td>
+);

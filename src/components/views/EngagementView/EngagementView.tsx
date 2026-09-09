@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useCommunications } from '../../../context/CommunicationsContext';
 import { Card, CardHeader } from '../../ui/Card';
 import { Badge } from '../../ui/Badge';
-import { Button } from '../../ui/Button';
 import { GanttChart } from '../../shared/GanttChart/GanttChart';
 import { formatDateFull } from '../../../utils/dateHelpers';
 
@@ -75,7 +74,7 @@ export const EngagementView: React.FC = () => {
             <label>Time</label>
             <input type="time" name="time" value={form.time} onChange={handleChange} />
           </div>
-          <button type="submit" className="btn-add">➕ Add</button>
+          <button type="submit" className="btn btn-primary btn-sm">➕ Add</button>
         </form>
 
         <Card style={{ marginBottom: '12px' }}>

@@ -1,1 +1,0 @@
-import{n as e,t}from"./jsx-runtime-Cltr0gcK.js";e();var n=t(),r=({color:e=`gray`,children:t,className:r=``,style:i,...a})=>(0,n.jsx)(`span`,{className:`badge ${e} ${r}`,style:i,...a,children:t});export{r as t};

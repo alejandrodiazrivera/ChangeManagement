@@ -568,8 +568,10 @@ body {
 
 /* ─── TABLE ─── */
 .table-wrap {
-  overflow: auto;
+  /* let the parent wrapper handle scrolling so the header stays sticky */
+  overflow: visible;
   flex: 1;
+  min-height: 0;
 }
 .table-wrap table {
   width: 100%;
@@ -600,39 +602,10 @@ body {
   background: #f8faff;
 }
 
-/* ─── MATRIX ─── */
-.matrix-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-14);
-}
-.matrix-box {
-  height: var(--size-180);
-  border: var(--space-1) dashed #cfd6dd;
-  position: relative;
-  background: #fafbfc;
-  border-radius: var(--space-4);
-}
-.matrix-box .axis-x {
-  position: absolute;
-  bottom: var(--space-7);
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-size: var(--space-10);
-  color: #7a8691;
-}
-.matrix-box .axis-y {
-  position: absolute;
-  top: var(--space-75);
-  left: -var(--space-8);
-  transform: rotate(-90deg);
-  font-size: var(--space-10);
-  color: #7a8691;
-}
+/* matrix/grid styles removed — replaced by Plotly chart in StakeholdersView */
 .stakeholders-panel {
   margin-top: var(--space-16);
-  flex: 1;
+  flex: 0 0 auto; /* don't take remaining space — allow table card to grow */
 }
 
 .stakeholder-priority-copy {
@@ -644,37 +617,7 @@ body {
   margin-top: var(--space-16);
   flex-shrink: 0;
 }
-
-.stakeholder-dot--ceo {
-  left: 75%;
-  top: 25%;
-}
-
-.stakeholder-dot--sales {
-  left: 62%;
-  top: 43%;
-}
-
-.stakeholder-dot--warehouse {
-  left: 38%;
-  top: 68%;
-}
-
-.stakeholder-dot--finance {
-  left: 82%;
-  top: 72%;
-}
-
-.dot {
-  position: absolute;
-  width: var(--space-12);
-  height: var(--space-12);
-  background: #4f7df3;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  border: var(--space-2) solid #fff;
-  box-shadow: 0 var(--space-1) var(--space-4) rgba(0, 0, 0, 0.15);
-}
+/* legacy dot markers removed — Plotly handles markers now */
 
 /* ─── GANTT ─── */
 .gantt-wrapper {

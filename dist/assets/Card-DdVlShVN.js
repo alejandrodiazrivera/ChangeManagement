@@ -1,1 +1,0 @@
-import{n as e,t}from"./jsx-runtime-Cltr0gcK.js";e();var n=t(),r=({children:e,className:t=``,style:r,...i})=>(0,n.jsx)(`div`,{className:`card ${t}`,style:r,...i,children:e}),i=({children:e,className:t=``,style:r,...i})=>(0,n.jsx)(`div`,{className:`card-header ${t}`,style:r,...i,children:e});export{i as n,r as t};
