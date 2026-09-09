@@ -19,9 +19,14 @@ export const Thead: React.FC<React.HTMLAttributes<HTMLTableSectionElement>> = ({
 export const Tbody: React.FC<React.HTMLAttributes<HTMLTableSectionElement>> = ({ children, ...props }) => (
   <tbody {...props}>{children}</tbody>
 );
-export const Tr: React.FC<React.HTMLAttributes<HTMLTableRowElement>> = ({ children, className = '', ...props }) => (
-  <tr className={className} {...props}>{children}</tr>
-);
+type TrProps = React.HTMLAttributes<HTMLTableRowElement>;
+
+export const Tr = React.forwardRef<HTMLTableRowElement, TrProps>(({ children, className = '', ...props }, ref) => (
+  <tr ref={ref} className={className} {...props}>{children}</tr>
+));
+
+Tr.displayName = 'Tr';
+
 export const Th: React.FC<React.ThHTMLAttributes<HTMLTableCellElement>> = ({ children, ...props }) => (
   <th {...props}>{children}</th>
 );

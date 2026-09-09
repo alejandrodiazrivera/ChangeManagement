@@ -68,9 +68,19 @@ export const StakeholdersView: React.FC = () => {
   ]);
 
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const rowRefs = useRef<Record<number, HTMLTableRowElement | null>>({});
+
+  const filteredStakeholders = stakeholders.filter((s) => {
+    const haystack = [s.name, s.role, s.impact, s.influence, s.support, s.engagement, getStrategy(s.influence, s.support)]
+      .join(' ')
+      .toLowerCase();
+    return haystack.includes(searchQuery.trim().toLowerCase());
+  });
 
   const addStakeholder = () => {
     const newId = Date.now();
+    setSearchQuery('');
     setStakeholders((prev) => [
       ...prev,
       {
@@ -84,6 +94,10 @@ export const StakeholdersView: React.FC = () => {
       },
     ]);
     setEditingId(newId);
+
+    requestAnimationFrame(() => {
+      rowRefs.current[newId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
   };
 
   const updateStakeholder = (id: number, field: string, value: string) => {
@@ -306,14 +320,33 @@ export const StakeholdersView: React.FC = () => {
 
       {/* Bottom: Management table */}
       <Card style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0 }}>
-        <div className="module-toolbar">
+        <div className="module-toolbar" style={{ flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h2>Stakeholder Management</h2>
             <span>Map influence, support and engagement</span>
           </div>
-          <button className="btn btn-primary btn-sm" onClick={addStakeholder}>
-            + Add stakeholder
-          </button>
+
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search stakeholders..."
+              aria-label="Search stakeholders"
+              style={{
+                minWidth: '220px',
+                padding: '8px 12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '0.875rem',
+                color: '#111827',
+                backgroundColor: '#fff',
+              }}
+            />
+            <button className="btn btn-primary btn-sm" onClick={addStakeholder}>
+              + Add stakeholder
+            </button>
+          </div>
         </div>
 
         <div style={{ flex: '1 1 auto', overflow: 'auto', minHeight: 0 }}>
@@ -329,12 +362,17 @@ export const StakeholdersView: React.FC = () => {
             </Tr>
           </Thead>
           <Tbody>
-            {stakeholders.map((s) => {
+            {filteredStakeholders.map((s) => {
               const strategy = getStrategy(s.influence, s.support);
               const isEditing = editingId === s.id;
 
               return (
-                <Tr key={s.id}>
+                <Tr
+                  key={s.id}
+                  ref={(el) => {
+                    rowRefs.current[s.id] = el;
+                  }}
+                >
                   <Td>
                     {isEditing ? (
                       <>
