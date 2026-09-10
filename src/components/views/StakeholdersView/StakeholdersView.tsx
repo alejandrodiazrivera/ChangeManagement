@@ -27,6 +27,38 @@ const getStrategy = (influence: string, support: string): string => {
 // ─── Options for dropdowns ───
 const options = ['High', 'Medium', 'Low'];
 
+// Default roles available for quick selection — users can add more
+const defaultRoles = [
+  'Executive Sponsor',
+  'Senior Leader',
+  'Business Lead',
+  'Change Owner',
+  'Process Owner',
+  'Project Manager',
+  'Change Manager',
+  'Product Owner',
+  'Business Analyst',
+  'Team Manager',
+  'People Manager',
+  'Subject Matter Expert',
+  'End User',
+  'Super User',
+  'Change Champion',
+  'Key Influencer',
+  'Trainer',
+  'Communications Lead',
+  'HR / People Partner',
+  'IT / Technical Owner',
+  'IT Support',
+  'Data Owner',
+  'Compliance / Legal',
+  'Procurement',
+  'Vendor / External Partner',
+  'Customer',
+  'Regulator',
+  'Other',
+];
+
 export const StakeholdersView: React.FC = () => {
   const [stakeholders, setStakeholders] = useState([
     {
@@ -68,6 +100,7 @@ export const StakeholdersView: React.FC = () => {
   ]);
 
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [roles, setRoles] = useState<string[]>(defaultRoles);
   const [searchQuery, setSearchQuery] = useState('');
   const rowRefs = useRef<Record<number, HTMLTableRowElement | null>>({});
 
@@ -212,9 +245,14 @@ export const StakeholdersView: React.FC = () => {
       const annotations = watermarkConfig.map((w) => ({
         x: w.x,
         y: w.y,
-        text: w.label,
+        text: `<i>${w.label}</i>`,
         showarrow: false,
-        font: { size: 20, color: 'rgba(26, 58, 92, 0.16)', weight: 800, family: 'Segoe UI, sans-serif' },
+        font: {
+          size: 20,
+          color: 'rgba(18, 114, 218, 0.46)',
+          weight: 800,
+          family: 'Segoe UI, sans-serif'
+        },
         xanchor: 'center',
         yanchor: 'middle',
       }));
@@ -276,19 +314,23 @@ export const StakeholdersView: React.FC = () => {
       <div className="grid-2 stakeholders-panel">
         <Card>
           <CardHeader>
-            <h2>Influence × Support</h2>
-            <span>Stakeholder map</span>
+            <div>
+              <h2>Stakeholder Position Map</h2>
+              <span>Map stakeholder positions and engagement priorities</span>
+            </div>
           </CardHeader>
           <div style={{ padding: '8px 12px' }}>
             <div ref={plotRef} id="stakeholder-plot" style={{ width: '100%', height: 260 }} />
           </div>
         </Card>
-
         <Card>
           <CardHeader>
-            <h2>Priority</h2>
-            <span>Requires attention</span>
+            <div>
+              <h2>Engagement Priorities</h2>
+              <span>Stakeholder map</span>
+            </div>
           </CardHeader>
+          <span>Requires attention</span>
 
           {critical.length > 0 && (
             <p className="stakeholder-priority-copy">
@@ -322,8 +364,8 @@ export const StakeholdersView: React.FC = () => {
       <Card style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0 }}>
         <div className="module-toolbar" style={{ flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <h2>Stakeholder Management</h2>
-            <span>Map influence, support and engagement</span>
+            <h2>Stakeholder Analysis</h2>
+            <span>Identify influence, support and engagement</span>
           </div>
 
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -383,13 +425,33 @@ export const StakeholdersView: React.FC = () => {
                           placeholder="Enter name"
                           style={{ display: 'block', width: '100%', padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.9rem', marginBottom: '4px' }}
                         />
-                        <input
-                          type="text"
-                          value={s.role}
-                          onChange={(e) => updateStakeholder(s.id, 'role', e.target.value)}
-                          placeholder="Enter role"
-                          style={{ display: 'block', width: '100%', padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.75rem', color: '#6b7280' }}
-                        />
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <input
+                            list={`roles-list-${s.id}`}
+                            type="text"
+                            value={s.role}
+                            onChange={(e) => updateStakeholder(s.id, 'role', e.target.value)}
+                            placeholder="Enter or select role"
+                            style={{ display: 'block', width: '100%', padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.75rem', color: '#6b7280' }}
+                          />
+                          <datalist id={`roles-list-${s.id}`}>
+                            {roles.map((r) => (
+                              <option key={r} value={r} />
+                            ))}
+                          </datalist>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const val = (document.querySelector(`input[list=roles-list-${s.id}]`) as HTMLInputElement)?.value?.trim();
+                              if (val && !roles.includes(val)) setRoles((p) => [val, ...p]);
+                              if (val) updateStakeholder(s.id, 'role', val);
+                            }}
+                            title="Add role"
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #d1d5db', background: '#f3f4f6', cursor: 'pointer' }}
+                          >
+                            +
+                          </button>
+                        </div>
                       </>
                     ) : (
                       <>
