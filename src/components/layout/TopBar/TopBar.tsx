@@ -15,7 +15,11 @@ const pageTitles: Record<string, { title: string; badge: string }> = {
   '/register': { title: 'Resistance & Issue Register', badge: 'Table View' },
 };
 
-export const TopBar: React.FC = () => {
+interface TopBarProps {
+  onMenuClick: () => void;
+}
+
+export const TopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
   const location = useLocation();
   const { state: registerState, runAI, applyAISuggestions } = useRegister();
   const toast = useToast();
@@ -46,6 +50,9 @@ export const TopBar: React.FC = () => {
 
   return (
     <div className="top-bar">
+      <button className="mobile-menu-button" type="button" aria-label="Open navigation" onClick={onMenuClick}>
+        <i className="fas fa-bars"></i>
+      </button>
       <div className="title-group">
         <h1>
           <i className="fas fa-chart-pie" style={{ color: '#4f7df3', marginRight: 6 }}></i>

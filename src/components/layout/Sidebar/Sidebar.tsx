@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { X } from 'lucide-react';
 
 const navItems = [
   { path: '/overview', icon: 'fa-chart-pie', label: 'Change Overview' },
@@ -11,17 +12,26 @@ const navItems = [
   { path: '/register', icon: 'fa-clipboard-list', label: 'Resistance & Issue Register' },
 ];
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
       <div className="logo">
         <i className="fas fa-arrow-trend-up"></i>
         <span>ChangeFlow</span>
+        <button className="sidebar-close" type="button" aria-label="Close navigation" onClick={onClose}>
+          <X size={18} />
+        </button>
       </div>
       {navItems.map(item => (
         <NavLink
           key={item.path}
           to={item.path}
+          onClick={onClose}
           className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
         >
           <i className={`fas ${item.icon}`}></i>

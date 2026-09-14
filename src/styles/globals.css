@@ -88,6 +88,7 @@ body {
 .app {
   display: flex;
   height: 100vh;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -103,6 +104,8 @@ body {
   border-right: var(--space-1) solid #1e2433;
   height: 100vh;
   overflow-y: auto;
+  position: relative;
+  z-index: 30;
 }
 
 .logo {
@@ -115,6 +118,10 @@ body {
   display: flex;
   align-items: center;
   gap: var(--space-10);
+}
+.sidebar-close,
+.mobile-menu-button {
+  display: none;
 }
 .logo i {
   color: #4f7df3;
@@ -170,6 +177,8 @@ body {
 /* ─── MAIN ─── */
 .main {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   padding: var(--space-20) var(--space-28) var(--space-28);
   display: flex;
   flex-direction: column;
@@ -312,10 +321,18 @@ body {
 
 .workspace {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   gap: var(--space-16);
+  overscroll-behavior: contain;
+}
+
+.sidebar-backdrop {
+  display: none;
 }
 
 .view {
@@ -568,10 +585,11 @@ body {
 
 /* ─── TABLE ─── */
 .table-wrap {
-  /* let the parent wrapper handle scrolling so the header stays sticky */
-  overflow: visible;
+  overflow-x: auto;
+  overflow-y: visible;
   flex: 1;
   min-height: 0;
+  max-width: 100%;
 }
 .table-wrap table {
   width: 100%;
@@ -1230,34 +1248,102 @@ body {
 
 @media (max-width: 850px) {
   .sidebar {
-    width: var(--space-64);
-    padding: var(--space-16) var(--space-8);
-    height: auto;
-    position: relative;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(280px, 85vw);
+    padding: var(--space-20) var(--space-16);
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 180ms ease;
+    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.2);
+  }
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: rgba(11, 13, 23, 0.48);
+    cursor: pointer;
+  }
+  .sidebar-close,
+  .mobile-menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sidebar-close {
+    width: 32px;
+    height: 32px;
+    margin-left: auto;
+    padding: 0;
+    border: 1px solid #2b3447;
+    border-radius: var(--radius-4);
+    background: transparent;
+    color: #cbd5e1;
+  }
+  .sidebar-close:hover {
+    background: #1e2433;
+  }
+  .mobile-menu-button {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid #d4d7dd;
+    border-radius: var(--radius-4);
+    background: #fff;
+    color: #1a1f36;
+  }
+  .mobile-menu-button:hover {
+    background: #f4f5f7;
   }
   .logo span,
   .nav-item span {
-    display: none;
+    display: inline;
   }
   .logo {
-    justify-content: center;
-    padding: 0;
-    font-size: var(--space-16);
+    justify-content: flex-start;
+    padding-left: var(--space-8);
+    font-size: var(--font-18);
   }
   .nav-item {
-    justify-content: center;
-    padding: var(--space-8);
-    font-size: var(--space-14);
+    justify-content: flex-start;
+    padding: var(--space-8) var(--space-14);
+    font-size: var(--font-13);
   }
   .nav-item i {
     margin: 0;
-    font-size: var(--space-16);
+    font-size: var(--font-14);
   }
   .sidebar-footer {
-    display: none;
+    display: block;
   }
   .main {
+    width: 100%;
     padding: var(--space-12) var(--space-12) var(--space-16);
+  }
+  .top-bar {
+    align-items: flex-start;
+  }
+  .top-bar .title-group {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .top-bar .title-group h1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .top-bar .actions {
+    flex: 0 1 auto;
   }
   .register-table-wrap table {
     min-width: var(--size-700);
@@ -1281,17 +1367,6 @@ body {
 }
 
 @media (max-width: 500px) {
-  .sidebar {
-    width: var(--space-48);
-    padding: var(--space-8) var(--space-4);
-  }
-  .nav-item {
-    padding: var(--space-6);
-    font-size: var(--space-12);
-  }
-  .nav-item i {
-    font-size: var(--space-14);
-  }
   .top-bar .actions .btn span {
     display: none;
   }

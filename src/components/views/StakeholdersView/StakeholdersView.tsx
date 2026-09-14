@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Pencil, Trash2, Settings } from 'lucide-react';
+import { CircleDot, Pencil, Trash2, Settings } from 'lucide-react';
 import { Card, CardHeader } from '../../ui/Card';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../ui/Table';
-import { Badge } from '../../ui/Badge';
 import { useStakeholders } from '../../../context/StakeholdersContext';
 
 // ─── The Theory: Attitude is a qualitative, ordered variable (Likert-style), not a continuous score ───
@@ -367,7 +366,10 @@ export const StakeholdersView: React.FC = () => {
     <>
       <style>{`
         .stakeholders-analysis-card {
-          padding: 20px;
+          padding: 0;
+          overflow: hidden;
+          min-height: 0;
+          flex: 0 0 auto !important;
         }
 
         .stakeholders-analysis-toolbar {
@@ -377,6 +379,7 @@ export const StakeholdersView: React.FC = () => {
           height: 64px;
           gap: 8px;
           margin-bottom: 8px;
+          padding: 0 20px;
           border-bottom: 1px solid rgba(0, 0, 0, 0.08);
         }
 
@@ -412,15 +415,43 @@ export const StakeholdersView: React.FC = () => {
         }
 
         .stakeholders-table-wrap {
+          width: 100%;
           border: 1px solid rgba(0, 0, 0, 0.08);
           background: #fff;
-          overflow: hidden;
+          overflow: auto !important;
+          flex: 0 0 auto !important;
+          min-height: 0;
+        }
+
+        .stakeholders-table-wrap > .table-wrap {
+          overflow: visible;
         }
 
         .stakeholders-table-wrap table {
-          min-width: 0 !important;
+          min-width: 760px !important;
           table-layout: fixed;
           font-size: 13px !important;
+        }
+
+        .stakeholders-table-wrap col:nth-child(1) {
+          width: 30%;
+        }
+
+        .stakeholders-table-wrap col:nth-child(2),
+        .stakeholders-table-wrap col:nth-child(3) {
+          width: 13%;
+        }
+
+        .stakeholders-table-wrap col:nth-child(4) {
+          width: 14%;
+        }
+
+        .stakeholders-table-wrap col:nth-child(5) {
+          width: 22%;
+        }
+
+        .stakeholders-table-wrap col:nth-child(6) {
+          width: 8%;
         }
 
         .stakeholders-table-wrap th,
@@ -461,20 +492,6 @@ export const StakeholdersView: React.FC = () => {
           border-bottom: 0 !important;
         }
 
-        .stakeholders-table-wrap td:first-child {
-          width: 28%;
-        }
-
-        .stakeholders-table-wrap td:nth-child(2),
-        .stakeholders-table-wrap td:nth-child(3),
-        .stakeholders-table-wrap td:nth-child(4) {
-          width: 14%;
-        }
-
-        .stakeholders-table-wrap td:nth-child(5) {
-          width: 22%;
-        }
-
         .stakeholders-table-wrap td:last-child,
         .stakeholders-table-wrap th:last-child {
           width: 80px !important;
@@ -494,10 +511,50 @@ export const StakeholdersView: React.FC = () => {
           border-radius: 4px !important;
         }
 
+        .stakeholder-status {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          color: #6b7280;
+          white-space: nowrap;
+        }
+
+        .stakeholder-status svg {
+          width: 16px;
+          height: 16px;
+          flex: 0 0 auto;
+        }
+
+        .stakeholder-identity {
+          display: flex;
+          align-items: baseline;
+          gap: 8px;
+          min-width: 0;
+          white-space: nowrap;
+        }
+
+        .stakeholder-identity strong,
+        .stakeholder-identity span {
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .stakeholder-identity span {
+          min-width: 0;
+          color: #6b7280;
+          font-size: 11px;
+        }
+
+        .stakeholder-identity span::before {
+          content: '·';
+          margin-right: 8px;
+          color: #9ca3af;
+        }
+
         @media (max-width: 900px) {
           .stakeholders-table-wrap table {
             table-layout: auto;
-            min-width: 700px !important;
+            min-width: 760px !important;
           }
         }
       `}</style>
@@ -585,6 +642,14 @@ export const StakeholdersView: React.FC = () => {
 
         <div className="stakeholders-table-wrap" style={{ flex: '1 1 auto', overflow: 'auto', minHeight: 0 }}>
         <Table>
+          <colgroup>
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+          </colgroup>
           <Thead>
             <Tr>
               <Th>
@@ -711,9 +776,9 @@ export const StakeholdersView: React.FC = () => {
                           </div>
                         </>
                       ) : (
-                        <div style={{ width: '100%' }}>
+                        <div className="stakeholder-identity" style={{ width: '100%' }}>
                           <strong>{s.name || '—'}</strong>
-                          <span style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280' }}>{s.role || '—'}</span>
+                          <span>{s.role || '—'}</span>
                         </div>
                       )}
                     </div>
@@ -762,19 +827,10 @@ export const StakeholdersView: React.FC = () => {
                   </Td>
 
                   <Td>
-                    <Badge
-                      color={
-                        strategy === 'Collaborate' || strategy === 'Convert'
-                          ? 'purple'
-                          : strategy === 'Engage' || strategy === 'Intensive Engagement'
-                          ? 'yellow'
-                          : strategy === 'Involve' || strategy === 'Keep Satisfied'
-                          ? 'sky'
-                          : 'gray'
-                      }
-                    >
+                    <span className="stakeholder-status">
+                      <CircleDot size={16} aria-hidden="true" />
                       {strategy}
-                    </Badge>
+                    </span>
                   </Td>
 
                   <Td style={{ whiteSpace: 'nowrap', width: '80px', minWidth: '80px', padding: '8px 6px', textAlign: 'center' }}>

@@ -131,7 +131,8 @@ export const ImpactView: React.FC = () => {
           width: 100%;
           border: 1px solid rgba(0, 0, 0, 0.08);
           background: #fff;
-          overflow: hidden;
+          overflow-x: auto;
+          overflow-y: visible;
         }
 
         .impact-table {
