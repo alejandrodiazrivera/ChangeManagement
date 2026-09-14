@@ -1,31 +1,46 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings } from 'lucide-react';
+import { Pencil, Trash2, Settings } from 'lucide-react';
 import { Card, CardHeader } from '../../ui/Card';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../ui/Table';
 import { Badge } from '../../ui/Badge';
 
-// ─── The Theory: Auto-calculate Strategy based on Influence & Support ───
-const getStrategy = (influence: string, support: string): string => {
+// ─── The Theory: Attitude is a qualitative, ordered variable (Likert-style), not a continuous score ───
+const attitudeOptions = ['Very Supportive', 'Supportive', 'Mixed', 'Resistant', 'Very Resistant', 'Other'];
+const attitudeRank: Record<string, number> = attitudeOptions.reduce((acc, item, index) => {
+  acc[item] = index;
+  return acc;
+}, {} as Record<string, number>);
+
+const getAttitudeCode = (attitude: string): number => attitudeRank[attitude] ?? 0;
+
+const getStrategy = (influence: string, attitude: string): string => {
+  const attitudeCode = getAttitudeCode(attitude);
+  const isVerySupportive = attitudeCode === 0;
+  const isSupportive = attitudeCode === 1;
+  const isMixed = attitudeCode === 2;
+  const isResistant = attitudeCode >= 3;
+
   if (influence === 'High') {
-    if (support === 'High') return 'Collaborate';
-    if (support === 'Medium') return 'Engage';
-    if (support === 'Low') return 'Convert';
+    if (isVerySupportive || isSupportive) return 'Collaborate';
+    if (isMixed) return 'Engage';
+    if (isResistant) return 'Convert';
   }
   if (influence === 'Medium') {
-    if (support === 'High') return 'Involve';
-    if (support === 'Medium') return 'Keep Informed';
-    if (support === 'Low') return 'Intensive Engagement';
+    if (isVerySupportive || isSupportive) return 'Involve';
+    if (isMixed) return 'Keep Informed';
+    if (isResistant) return 'Intensive Engagement';
   }
   if (influence === 'Low') {
-    if (support === 'High') return 'Keep Satisfied';
-    if (support === 'Medium') return 'Keep Informed';
-    if (support === 'Low') return 'Monitor';
+    if (isVerySupportive || isSupportive) return 'Keep Satisfied';
+    if (isMixed) return 'Keep Informed';
+    if (isResistant) return 'Monitor';
   }
   return 'Monitor';
 };
 
 // ─── Options for dropdowns ───
 const options = ['High', 'Medium', 'Low'];
+const attitudeValues = ['Very Supportive', 'Supportive', 'Mixed', 'Resistant', 'Very Resistant', 'Other'];
 
 // Default roles available for quick selection — users can add more
 const defaultRoles = [
@@ -67,8 +82,7 @@ export const StakeholdersView: React.FC = () => {
       role: 'Executive Sponsor',
       impact: 'Low',
       influence: 'High',
-      support: 'High',
-      engagement: 'High',
+      attitude: 'Very Supportive',
     },
     {
       id: 2,
@@ -76,8 +90,7 @@ export const StakeholdersView: React.FC = () => {
       role: 'Business Lead',
       impact: 'High',
       influence: 'High',
-      support: 'Medium',
-      engagement: 'Medium',
+      attitude: 'Supportive',
     },
     {
       id: 3,
@@ -85,8 +98,7 @@ export const StakeholdersView: React.FC = () => {
       role: 'End Users',
       impact: 'High',
       influence: 'Medium',
-      support: 'Low',
-      engagement: 'Low',
+      attitude: 'Resistant',
     },
     {
       id: 4,
@@ -94,21 +106,85 @@ export const StakeholdersView: React.FC = () => {
       role: 'Process Owner',
       impact: 'Medium',
       influence: 'Medium',
-      support: 'High',
-      engagement: 'High',
+      attitude: 'Mixed',
     },
   ]);
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [roles, setRoles] = useState<string[]>(defaultRoles);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStakeholderIds, setSelectedStakeholderIds] = useState<number[]>([]);
+  const [sortConfig, setSortConfig] = useState<{ key: 'name' | 'impact' | 'influence' | 'attitude' | 'strategy'; direction: 'asc' | 'desc' | null } | null>(null);
+  const [hoveredRowId, setHoveredRowId] = useState<number | null>(null);
   const rowRefs = useRef<Record<number, HTMLTableRowElement | null>>({});
 
+  const handleSort = (key: 'name' | 'impact' | 'influence' | 'attitude' | 'strategy') => {
+    setSortConfig((prev) => {
+      if (!prev || prev.key !== key) return { key, direction: 'asc' };
+      if (prev.direction === 'asc') return { key, direction: 'desc' };
+      return null;
+    });
+  };
+
+  const getSortValue = (key: 'name' | 'impact' | 'influence' | 'attitude' | 'strategy', stakeholder: (typeof stakeholders)[number]) => {
+    switch (key) {
+      case 'name':
+        return stakeholder.name || '';
+      case 'impact':
+        return stakeholder.impact || '';
+      case 'influence':
+        return stakeholder.influence || '';
+      case 'attitude':
+        return stakeholder.attitude || '';
+      case 'strategy':
+        return getStrategy(stakeholder.influence, stakeholder.attitude);
+      default:
+        return '';
+    }
+  };
+
+  const toggleStakeholderSelection = (id: number, additiveSelection: boolean) => {
+    setSelectedStakeholderIds((prev) => {
+      if (additiveSelection) {
+        return prev.includes(id) ? prev.filter((selectedId) => selectedId !== id) : [...prev, id];
+      }
+
+      if (prev.includes(id) && prev.length === 1) {
+        return [];
+      }
+
+      return [id];
+    });
+  };
+
   const filteredStakeholders = stakeholders.filter((s) => {
-    const haystack = [s.name, s.role, s.impact, s.influence, s.support, s.engagement, getStrategy(s.influence, s.support)]
+    const haystack = [s.name, s.role, s.impact, s.influence, s.attitude, getStrategy(s.influence, s.attitude)]
       .join(' ')
       .toLowerCase();
     return haystack.includes(searchQuery.trim().toLowerCase());
+  });
+
+  const sortedStakeholders = [...filteredStakeholders].sort((a, b) => {
+    if (!sortConfig || !sortConfig.direction) return 0;
+
+    const direction = sortConfig.direction === 'asc' ? 1 : -1;
+    const aValue = getSortValue(sortConfig.key, a);
+    const bValue = getSortValue(sortConfig.key, b);
+
+    const priorityMap: Record<string, number> = { High: 3, Medium: 2, Low: 1 };
+    const isPriorityField = sortConfig.key === 'impact' || sortConfig.key === 'influence';
+
+    if (sortConfig.key === 'attitude') {
+      return (getAttitudeCode(String(aValue)) - getAttitudeCode(String(bValue))) * direction;
+    }
+
+    if (isPriorityField) {
+      const aPriority = priorityMap[aValue] ?? 0;
+      const bPriority = priorityMap[bValue] ?? 0;
+      return (aPriority - bPriority) * direction;
+    }
+
+    return String(aValue).localeCompare(String(bValue)) * direction;
   });
 
   const addStakeholder = () => {
@@ -122,8 +198,7 @@ export const StakeholdersView: React.FC = () => {
         role: '',
         impact: 'Low',
         influence: 'Low',
-        support: 'Low',
-        engagement: 'Low',
+        attitude: 'Mixed',
       },
     ]);
     setEditingId(newId);
@@ -144,9 +219,11 @@ export const StakeholdersView: React.FC = () => {
 
   const cancelEdit = () => setEditingId(null);
 
-  const critical = stakeholders.filter((s) => s.impact === 'High' && s.support === 'Low');
+  const critical = stakeholders.filter((s) => s.impact === 'High' && ['Resistant', 'Very Resistant'].includes(s.attitude));
   const highRisk = stakeholders.filter(
-    (s) => (s.impact === 'High' && s.support === 'Medium') || (s.impact === 'Medium' && s.support === 'Low')
+    (s) =>
+      (s.impact === 'High' && ['Mixed', 'Resistant'].includes(s.attitude)) ||
+      (s.impact === 'Medium' && ['Resistant', 'Very Resistant', 'Mixed'].includes(s.attitude))
   );
 
   const plotRef = useRef<HTMLDivElement | null>(null);
@@ -169,10 +246,25 @@ export const StakeholdersView: React.FC = () => {
       if (!mounted) return;
       if (!plotRef.current) return;
 
-      const mapSupportX = (support: string) => (support === 'High' ? 4 : support === 'Medium' ? 0 : -4);
+      const mapAttitudeX = (attitude: string) => {
+        const rank = getAttitudeCode(attitude);
+        if (attitude === 'Very Supportive') return 4;
+        if (attitude === 'Supportive') return 2;
+        if (attitude === 'Mixed') return 0;
+        if (attitude === 'Resistant') return -2;
+        if (attitude === 'Very Resistant') return -4;
+        return 0;
+      };
       const mapInfluenceY = (influence: string) => (influence === 'High' ? 4.6 : influence === 'Medium' ? 3.0 : 1.4);
       const impactValue = (impact: string) => (impact === 'High' ? 88 : impact === 'Medium' ? 55 : 25);
-      const colorMap: Record<string, string> = { High: '#7c3aed', Medium: '#0284c7', Low: '#64748b' };
+      const colorMap: Record<string, string> = {
+        'Very Supportive': '#16a34a',
+        Supportive: '#22c55e',
+        Mixed: '#f59e0b',
+        Resistant: '#f97316',
+        'Very Resistant': '#dc2626',
+        Other: '#64748b',
+      };
 
       // deterministic seeded jitter to avoid overlapping labels
       const seeded = (str: string) => {
@@ -183,32 +275,39 @@ export const StakeholdersView: React.FC = () => {
       const jitterX = (seed: string) => (seeded(seed) - 0.5) * 1.6; // ±0.8
       const jitterY = (seed: string) => (seeded(seed + 'y') - 0.5) * 0.8; // ±0.4
 
+      const selectedIds = new Set(selectedStakeholderIds);
+
       const points = stakeholders.map((s, idx) => {
         const seed = `${s.id}-${s.name}-${idx}`;
         const jx = jitterX(seed);
         const jy = jitterY(seed);
+        const isSelected = selectedIds.has(s.id);
+        const baseSize = Math.sqrt(impactValue(s.impact)) * 1.8 + 4;
+
         return {
           name: s.name || 'New stakeholder',
           role: s.role || '',
-          support: s.support,
+          attitude: s.attitude,
           influence: s.influence,
           impact: s.impact,
-          x: mapSupportX(s.support) + jx,
+          x: mapAttitudeX(s.attitude) + jx,
           y: mapInfluenceY(s.influence) + jy,
           jx,
           jy,
-          size: Math.sqrt(impactValue(s.impact)) * 1.8 + 4,
-          color: colorMap[s.engagement] || '#64748b',
+          size: baseSize,
+          highlightedSize: isSelected ? baseSize * 1.25 : baseSize,
+          color: colorMap[s.attitude] || '#64748b',
+          isSelected,
         };
       });
 
       const hoverTexts = points.map(
         (p) =>
           `<b>${p.name}</b> (${p.role})<br>` +
-          `Support: ${p.support}<br>` +
+          `Attitude: ${p.attitude}<br>` +
           `Influence: ${p.influence}<br>` +
           `Impact: ${p.impact}<br>` +
-          `<b>Strategy: ${getStrategy(p.influence, p.support)}</b>`
+          `<b>Strategy: ${getStrategy(p.influence, p.attitude)}</b>`
       );
 
       const trace: any = {
@@ -221,10 +320,13 @@ export const StakeholdersView: React.FC = () => {
         hoverinfo: 'text',
         hovertext: hoverTexts,
         marker: {
-          size: points.map((p) => p.size),
+          size: points.map((p) => (p.isSelected ? p.highlightedSize : p.size)),
           color: points.map((p) => p.color),
-          line: { color: 'white', width: 1.5 },
-          opacity: 0.92,
+          line: {
+            color: points.map((p) => (p.isSelected ? '#0f172a' : 'rgba(255,255,255,0.9)')),
+            width: points.map((p) => (p.isSelected ? 4 : 1.5)),
+          },
+          opacity: points.map((p) => (p.isSelected ? 1 : 0.8)),
           sizemode: 'area',
         },
         showlegend: false,
@@ -306,7 +408,7 @@ export const StakeholdersView: React.FC = () => {
         } catch (e) {}
       }
     };
-  }, [stakeholders]);
+  }, [stakeholders, selectedStakeholderIds]);
 
   return (
     <>
@@ -335,8 +437,8 @@ export const StakeholdersView: React.FC = () => {
           {critical.length > 0 && (
             <p className="stakeholder-priority-copy">
               🔴 <strong>Critical:</strong>{' '}
-              {critical.map((s) => s.name || 'New stakeholder').join(' & ')} — High Impact + Low Support →{' '}
-              <strong>{critical.map((s) => getStrategy(s.influence, s.support)).join(' / ')}</strong>
+              {critical.map((s) => s.name || 'New stakeholder').join(' & ')} — High impact with resistant or highly resistant attitude →{' '}
+              <strong>{critical.map((s) => getStrategy(s.influence, s.attitude)).join(' / ')}</strong>
             </p>
           )}
 
@@ -345,7 +447,7 @@ export const StakeholdersView: React.FC = () => {
               🟡 <strong>High:</strong>{' '}
               {highRisk.map((s) => s.name || 'New stakeholder').join(' & ')} —{' '}
               {highRisk
-                .map((s) => ` ${s.name || 'New stakeholder'} (${getStrategy(s.influence, s.support)})`)
+                .map((s) => ` ${s.name || 'New stakeholder'} (${getStrategy(s.influence, s.attitude)})`)
                 .join('; ')}
             </p>
           )}
@@ -365,7 +467,7 @@ export const StakeholdersView: React.FC = () => {
         <div className="module-toolbar" style={{ flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h2>Stakeholder Analysis</h2>
-            <span>Identify influence, support and engagement</span>
+            <span>Identify influence and attitude</span>
           </div>
 
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -395,18 +497,54 @@ export const StakeholdersView: React.FC = () => {
         <Table>
           <Thead>
             <Tr>
-              <Th>Stakeholder</Th>
-              <Th>Impact</Th>
-              <Th>Influence</Th>
-              <Th>Support / Engagement</Th>
-              <Th>Strategy</Th>
-              <Th>Actions</Th>
+              <Th>
+                <button type="button" onClick={() => handleSort('name')} style={{ border: 'none', background: 'transparent', padding: 0, fontWeight: 700, cursor: 'pointer', color: '#111827', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <span>Stakeholder</span>
+                  <span aria-hidden="true" style={{ fontSize: '0.75rem', color: '#6b7280', minWidth: '0.75rem', textAlign: 'center', opacity: sortConfig?.key === 'name' ? 1 : 0 }}>
+                    {sortConfig?.key === 'name' ? (sortConfig.direction === 'asc' ? '↑' : sortConfig.direction === 'desc' ? '↓' : '') : ''}
+                  </span>
+                </button>
+              </Th>
+              <Th>
+                <button type="button" onClick={() => handleSort('impact')} style={{ border: 'none', background: 'transparent', padding: 0, fontWeight: 700, cursor: 'pointer', color: '#111827', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <span>Impact</span>
+                  <span aria-hidden="true" style={{ fontSize: '0.75rem', color: '#6b7280', minWidth: '0.75rem', textAlign: 'center', opacity: sortConfig?.key === 'impact' ? 1 : 0 }}>
+                    {sortConfig?.key === 'impact' ? (sortConfig.direction === 'asc' ? '↑' : sortConfig.direction === 'desc' ? '↓' : '') : ''}
+                  </span>
+                </button>
+              </Th>
+              <Th>
+                <button type="button" onClick={() => handleSort('influence')} style={{ border: 'none', background: 'transparent', padding: 0, fontWeight: 700, cursor: 'pointer', color: '#111827', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <span>Influence</span>
+                  <span aria-hidden="true" style={{ fontSize: '0.75rem', color: '#6b7280', minWidth: '0.75rem', textAlign: 'center', opacity: sortConfig?.key === 'influence' ? 1 : 0 }}>
+                    {sortConfig?.key === 'influence' ? (sortConfig.direction === 'asc' ? '↑' : sortConfig.direction === 'desc' ? '↓' : '') : ''}
+                  </span>
+                </button>
+              </Th>
+              <Th>
+                <button type="button" onClick={() => handleSort('attitude')} style={{ border: 'none', background: 'transparent', padding: 0, fontWeight: 700, cursor: 'pointer', color: '#111827', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <span>Attitude</span>
+                  <span aria-hidden="true" style={{ fontSize: '0.75rem', color: '#6b7280', minWidth: '0.75rem', textAlign: 'center', opacity: sortConfig?.key === 'attitude' ? 1 : 0 }}>
+                    {sortConfig?.key === 'attitude' ? (sortConfig.direction === 'asc' ? '↑' : sortConfig.direction === 'desc' ? '↓' : '') : ''}
+                  </span>
+                </button>
+              </Th>
+              <Th>
+                <button type="button" onClick={() => handleSort('strategy')} style={{ border: 'none', background: 'transparent', padding: 0, fontWeight: 700, cursor: 'pointer', color: '#111827', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <span>Strategy</span>
+                  <span aria-hidden="true" style={{ fontSize: '0.75rem', color: '#6b7280', minWidth: '0.75rem', textAlign: 'center', opacity: sortConfig?.key === 'strategy' ? 1 : 0 }}>
+                    {sortConfig?.key === 'strategy' ? (sortConfig.direction === 'asc' ? '↑' : sortConfig.direction === 'desc' ? '↓' : '') : ''}
+                  </span>
+                </button>
+              </Th>
+              <Th style={{ width: '80px', minWidth: '80px', textAlign: 'center' }}>Actions</Th>
             </Tr>
           </Thead>
           <Tbody>
-            {filteredStakeholders.map((s) => {
-              const strategy = getStrategy(s.influence, s.support);
+            {sortedStakeholders.map((s) => {
+              const strategy = getStrategy(s.influence, s.attitude);
               const isEditing = editingId === s.id;
+              const isSelected = selectedStakeholderIds.includes(s.id);
 
               return (
                 <Tr
@@ -414,51 +552,81 @@ export const StakeholdersView: React.FC = () => {
                   ref={(el) => {
                     rowRefs.current[s.id] = el;
                   }}
+                  onMouseEnter={() => setHoveredRowId(s.id)}
+                  onMouseLeave={() => setHoveredRowId((current) => (current === s.id ? null : current))}
+                  onFocusCapture={() => setHoveredRowId(s.id)}
+                  onBlurCapture={() => setHoveredRowId((current) => (current === s.id ? null : current))}
+                  onClick={(event) => {
+                    if (isEditing) return;
+                    if ((event.target as HTMLElement).closest('button, input, select')) return;
+
+                    const additiveSelection = event.metaKey || event.ctrlKey || event.shiftKey;
+                    toggleStakeholderSelection(s.id, additiveSelection);
+                  }}
+                  style={{
+                    cursor: 'pointer',
+                    backgroundColor: isSelected ? '#eef2ff' : undefined,
+                    boxShadow: isSelected ? 'inset 3px 0 0 #4f46e5' : undefined,
+                  }}
                 >
                   <Td>
-                    {isEditing ? (
-                      <>
-                        <input
-                          type="text"
-                          value={s.name}
-                          onChange={(e) => updateStakeholder(s.id, 'name', e.target.value)}
-                          placeholder="Enter name"
-                          style={{ display: 'block', width: '100%', padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.9rem', marginBottom: '4px' }}
-                        />
-                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                          <input
-                            list={`roles-list-${s.id}`}
-                            type="text"
-                            value={s.role}
-                            onChange={(e) => updateStakeholder(s.id, 'role', e.target.value)}
-                            placeholder="Enter or select role"
-                            style={{ display: 'block', width: '100%', padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.75rem', color: '#6b7280' }}
-                          />
-                          <datalist id={`roles-list-${s.id}`}>
-                            {roles.map((r) => (
-                              <option key={r} value={r} />
-                            ))}
-                          </datalist>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const val = (document.querySelector(`input[list=roles-list-${s.id}]`) as HTMLInputElement)?.value?.trim();
-                              if (val && !roles.includes(val)) setRoles((p) => [val, ...p]);
-                              if (val) updateStakeholder(s.id, 'role', val);
-                            }}
-                            title="Add role"
-                            style={{ padding: '4px 8px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #d1d5db', background: '#f3f4f6', cursor: 'pointer' }}
-                          >
-                            +
-                          </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        aria-label={`Select ${s.name || 'stakeholder'}`}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleStakeholderSelection(s.id, e.nativeEvent instanceof MouseEvent ? (e.nativeEvent as MouseEvent).metaKey || (e.nativeEvent as MouseEvent).ctrlKey || (e.nativeEvent as MouseEvent).shiftKey : false);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      {isEditing ? (
+                        <>
+                          <div style={{ width: '100%' }}>
+                            <input
+                              type="text"
+                              value={s.name}
+                              onChange={(e) => updateStakeholder(s.id, 'name', e.target.value)}
+                              placeholder="Enter name"
+                              style={{ display: 'block', width: '100%', padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.9rem', marginBottom: '4px' }}
+                            />
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                              <input
+                                list={`roles-list-${s.id}`}
+                                type="text"
+                                value={s.role}
+                                onChange={(e) => updateStakeholder(s.id, 'role', e.target.value)}
+                                placeholder="Enter or select role"
+                                style={{ display: 'block', width: '100%', padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.75rem', color: '#6b7280' }}
+                              />
+                              <datalist id={`roles-list-${s.id}`}>
+                                {roles.map((r) => (
+                                  <option key={r} value={r} />
+                                ))}
+                              </datalist>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const val = (document.querySelector(`input[list=roles-list-${s.id}]`) as HTMLInputElement)?.value?.trim();
+                                  if (val && !roles.includes(val)) setRoles((p) => [val, ...p]);
+                                  if (val) updateStakeholder(s.id, 'role', val);
+                                }}
+                                title="Add role"
+                                style={{ padding: '4px 8px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #d1d5db', background: '#f3f4f6', cursor: 'pointer' }}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ width: '100%' }}>
+                          <strong>{s.name || '—'}</strong>
+                          <span style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280' }}>{s.role || '—'}</span>
                         </div>
-                      </>
-                    ) : (
-                      <>
-                        <strong>{s.name || '—'}</strong>
-                        <span style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280' }}>{s.role || '—'}</span>
-                      </>
-                    )}
+                      )}
+                    </div>
                   </Td>
 
                   <Td>
@@ -491,20 +659,15 @@ export const StakeholdersView: React.FC = () => {
 
                   <Td>
                     {isEditing ? (
-                      <>
-                        <select value={s.support} onChange={(e) => updateStakeholder(s.id, 'support', e.target.value)} style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #d1d5db' }}>
-                          {options.map((o) => (
-                            <option key={o} value={o}>
-                              {o}
-                            </option>
-                          ))}
-                        </select>
-                        <span style={{ fontSize: '0.7rem', color: '#6b7280', marginLeft: '4px' }}>/ {s.engagement}</span>
-                      </>
+                      <select value={s.attitude} onChange={(e) => updateStakeholder(s.id, 'attitude', e.target.value)} style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #d1d5db' }}>
+                        {attitudeValues.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
                     ) : (
-                      <span>
-                        {s.support} / {s.engagement}
-                      </span>
+                      <span>{s.attitude}</span>
                     )}
                   </Td>
 
@@ -524,40 +687,137 @@ export const StakeholdersView: React.FC = () => {
                     </Badge>
                   </Td>
 
-                  <Td style={{ whiteSpace: 'nowrap' }}>
+                  <Td style={{ whiteSpace: 'nowrap', width: '80px', minWidth: '80px', padding: '8px 6px', textAlign: 'center' }}>
                     {isEditing ? (
-                      <>
-                        <button onClick={() => setEditingId(null)} style={{ padding: '2px 10px', fontSize: '0.75rem', color: '#fff', backgroundColor: '#2563eb', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '4px' }}>
-                          Save
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(null)}
+                          aria-label={`Save ${s.name || 'stakeholder'}`}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '30px',
+                            height: '30px',
+                            padding: 0,
+                            border: '1px solid #2563eb',
+                            borderRadius: '6px',
+                            backgroundColor: '#2563eb',
+                            color: '#fff',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <Pencil size={14} />
                         </button>
-                        <button onClick={cancelEdit} style={{ padding: '2px 10px', fontSize: '0.75rem', color: '#374151', backgroundColor: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '4px', cursor: 'pointer', marginRight: '4px' }}>
-                          Cancel
+                        <button
+                          type="button"
+                          onClick={() => deleteStakeholder(s.id)}
+                          aria-label={`Delete ${s.name || 'stakeholder'}`}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '30px',
+                            height: '30px',
+                            padding: 0,
+                            border: '1px solid #fecaca',
+                            borderRadius: '6px',
+                            backgroundColor: '#fef2f2',
+                            color: '#dc2626',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <Trash2 size={14} />
                         </button>
-                        <button onClick={() => deleteStakeholder(s.id)} style={{ padding: '2px 10px', fontSize: '0.75rem', color: '#dc2626', backgroundColor: 'transparent', border: '1px solid #dc2626', borderRadius: '4px', cursor: 'pointer' }}>
-                          Delete
-                        </button>
-                      </>
+                      </div>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => setEditingId(s.id)}
-                        aria-label={`Edit ${s.name || 'stakeholder'}`}
+                      <div
                         style={{
-                          display: 'inline-flex',
+                          display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '28px',
-                          height: '28px',
-                          padding: 0,
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          backgroundColor: '#fff',
-                          color: '#374151',
-                          cursor: 'pointer'
+                          gap: '6px',
+                          opacity: hoveredRowId === s.id ? 1 : 0,
+                          transition: 'opacity 0.15s ease',
+                          pointerEvents: hoveredRowId === s.id ? 'auto' : 'none',
                         }}
+                        className="row-actions"
                       >
-                        <Settings size={14} />
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(s.id)}
+                          aria-label={`Edit ${s.name || 'stakeholder'}`}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '30px',
+                            height: '30px',
+                            padding: 0,
+                            border: '1px solid transparent',
+                            borderRadius: '6px',
+                            backgroundColor: 'transparent',
+                            color: '#4f46e5',
+                            cursor: 'pointer',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#eef2ff';
+                            e.currentTarget.style.borderColor = '#c7d2fe';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.borderColor = 'transparent';
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.backgroundColor = '#eef2ff';
+                            e.currentTarget.style.borderColor = '#c7d2fe';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.borderColor = 'transparent';
+                          }}
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteStakeholder(s.id)}
+                          aria-label={`Delete ${s.name || 'stakeholder'}`}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '30px',
+                            height: '30px',
+                            padding: 0,
+                            border: '1px solid transparent',
+                            borderRadius: '6px',
+                            backgroundColor: 'transparent',
+                            color: '#ef4444',
+                            cursor: 'pointer',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#fef2f2';
+                            e.currentTarget.style.borderColor = '#fecaca';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.borderColor = 'transparent';
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.backgroundColor = '#fef2f2';
+                            e.currentTarget.style.borderColor = '#fecaca';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.borderColor = 'transparent';
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     )}
                   </Td>
                 </Tr>
