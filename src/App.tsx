@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { RegisterProvider } from './context/RegisterContext';
 import { CommunicationsProvider } from './context/CommunicationsContext';
+import { StakeholdersProvider } from './context/StakeholdersContext';
 import { ToastProvider } from './context/ToastContext';
 import { MainLayout } from './components/layout/MainLayout/MainLayout';
 
@@ -40,7 +41,8 @@ function App() {
     <ToastProvider>
       <RegisterProvider>
         <CommunicationsProvider>
-          <MainLayout>
+          <StakeholdersProvider>
+            <MainLayout>
             <React.Suspense fallback={<div>Loading...</div>}>
               <Routes>
                 <Route path="/" element={<Navigate to="/overview" replace />} />
@@ -53,7 +55,8 @@ function App() {
                 <Route path="/register" element={<RegisterView />} />
               </Routes>
             </React.Suspense>
-          </MainLayout>
+            </MainLayout>
+          </StakeholdersProvider>
         </CommunicationsProvider>
       </RegisterProvider>
     </ToastProvider>

@@ -3,6 +3,7 @@ import { Pencil, Trash2, Settings } from 'lucide-react';
 import { Card, CardHeader } from '../../ui/Card';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../ui/Table';
 import { Badge } from '../../ui/Badge';
+import { useStakeholders } from '../../../context/StakeholdersContext';
 
 // ─── The Theory: Attitude is a qualitative, ordered variable (Likert-style), not a continuous score ───
 const attitudeOptions = ['Very Supportive', 'Supportive', 'Mixed', 'Resistant', 'Very Resistant', 'Other'];
@@ -75,40 +76,7 @@ const defaultRoles = [
 ];
 
 export const StakeholdersView: React.FC = () => {
-  const [stakeholders, setStakeholders] = useState([
-    {
-      id: 1,
-      name: 'CEO',
-      role: 'Executive Sponsor',
-      impact: 'Low',
-      influence: 'High',
-      attitude: 'Very Supportive',
-    },
-    {
-      id: 2,
-      name: 'Sales Director',
-      role: 'Business Lead',
-      impact: 'High',
-      influence: 'High',
-      attitude: 'Supportive',
-    },
-    {
-      id: 3,
-      name: 'Warehouse Team',
-      role: 'End Users',
-      impact: 'High',
-      influence: 'Medium',
-      attitude: 'Resistant',
-    },
-    {
-      id: 4,
-      name: 'Finance',
-      role: 'Process Owner',
-      impact: 'Medium',
-      influence: 'Medium',
-      attitude: 'Mixed',
-    },
-  ]);
+  const { stakeholders, addStakeholder: createStakeholder, updateStakeholder, deleteStakeholder } = useStakeholders();
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [roles, setRoles] = useState<string[]>(defaultRoles);
@@ -188,19 +156,8 @@ export const StakeholdersView: React.FC = () => {
   });
 
   const addStakeholder = () => {
-    const newId = Date.now();
+    const newId = createStakeholder();
     setSearchQuery('');
-    setStakeholders((prev) => [
-      ...prev,
-      {
-        id: newId,
-        name: '',
-        role: '',
-        impact: 'Low',
-        influence: 'Low',
-        attitude: 'Mixed',
-      },
-    ]);
     setEditingId(newId);
 
     requestAnimationFrame(() => {
@@ -208,12 +165,8 @@ export const StakeholdersView: React.FC = () => {
     });
   };
 
-  const updateStakeholder = (id: number, field: string, value: string) => {
-    setStakeholders((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
-  };
-
-  const deleteStakeholder = (id: number) => {
-    setStakeholders((prev) => prev.filter((s) => s.id !== id));
+  const removeStakeholder = (id: number) => {
+    deleteStakeholder(id);
     if (editingId === id) setEditingId(null);
   };
 
@@ -412,6 +365,142 @@ export const StakeholdersView: React.FC = () => {
 
   return (
     <>
+      <style>{`
+        .stakeholders-analysis-card {
+          padding: 20px;
+        }
+
+        .stakeholders-analysis-toolbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          height: 64px;
+          gap: 8px;
+          margin-bottom: 8px;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .stakeholders-analysis-toolbar h2 {
+          margin: 0;
+          font-size: 13px;
+          font-weight: 600;
+        }
+
+        .stakeholders-analysis-toolbar span {
+          display: block;
+          margin: 0 0 0 8px;
+          color: #6b7280;
+          font-size: 13px;
+        }
+
+        .stakeholders-analysis-search {
+          min-width: 220px !important;
+          height: 24px !important;
+          padding: 0 6px !important;
+          border: 1px solid transparent !important;
+          border-radius: 4px !important;
+          background: transparent !important;
+          color: #1a1d21 !important;
+          font-size: 13px !important;
+        }
+
+        .stakeholders-analysis-search:hover,
+        .stakeholders-analysis-search:focus {
+          background: #f0f1f3 !important;
+          border-color: rgba(0, 0, 0, 0.08) !important;
+          outline: none;
+        }
+
+        .stakeholders-table-wrap {
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          background: #fff;
+          overflow: hidden;
+        }
+
+        .stakeholders-table-wrap table {
+          min-width: 0 !important;
+          table-layout: fixed;
+          font-size: 13px !important;
+        }
+
+        .stakeholders-table-wrap th,
+        .stakeholders-table-wrap td {
+          height: 32px !important;
+          padding: 0 8px !important;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+          line-height: 1 !important;
+          letter-spacing: -0.01em;
+        }
+
+        .stakeholders-table-wrap th {
+          height: 28px !important;
+          background: #fafafa !important;
+          color: #6b7280 !important;
+          font-size: 11px !important;
+          font-weight: 500 !important;
+          letter-spacing: 0.02em !important;
+        }
+
+        .stakeholders-table-wrap th > button {
+          color: #6b7280 !important;
+          font-size: 11px !important;
+          font-weight: 500 !important;
+          letter-spacing: 0.02em !important;
+          text-transform: uppercase;
+        }
+
+        .stakeholders-table-wrap tbody tr {
+          transition: background 80ms ease;
+        }
+
+        .stakeholders-table-wrap tbody tr:hover {
+          background: #f0f1f3 !important;
+        }
+
+        .stakeholders-table-wrap tbody tr:last-child td {
+          border-bottom: 0 !important;
+        }
+
+        .stakeholders-table-wrap td:first-child {
+          width: 28%;
+        }
+
+        .stakeholders-table-wrap td:nth-child(2),
+        .stakeholders-table-wrap td:nth-child(3),
+        .stakeholders-table-wrap td:nth-child(4) {
+          width: 14%;
+        }
+
+        .stakeholders-table-wrap td:nth-child(5) {
+          width: 22%;
+        }
+
+        .stakeholders-table-wrap td:last-child,
+        .stakeholders-table-wrap th:last-child {
+          width: 80px !important;
+          min-width: 80px !important;
+          text-align: center !important;
+        }
+
+        .stakeholders-table-wrap input[type='checkbox'] {
+          width: 16px;
+          height: 16px;
+          accent-color: #6366f1;
+        }
+
+        .stakeholders-table-wrap .row-actions button {
+          width: 24px !important;
+          height: 24px !important;
+          border-radius: 4px !important;
+        }
+
+        @media (max-width: 900px) {
+          .stakeholders-table-wrap table {
+            table-layout: auto;
+            min-width: 700px !important;
+          }
+        }
+      `}</style>
       {/* TOP: Map + Priority */}
       <div className="grid-2 stakeholders-panel">
         <Card>
@@ -463,8 +552,8 @@ export const StakeholdersView: React.FC = () => {
       </div>
 
       {/* Bottom: Management table */}
-      <Card style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0 }}>
-        <div className="module-toolbar" style={{ flexWrap: 'wrap', gap: '12px' }}>
+      <Card className="stakeholders-analysis-card" style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0 }}>
+        <div className="module-toolbar stakeholders-analysis-toolbar" style={{ flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h2>Stakeholder Analysis</h2>
             <span>Identify influence and attitude</span>
@@ -475,6 +564,7 @@ export const StakeholdersView: React.FC = () => {
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              className="stakeholders-analysis-search"
               placeholder="Search stakeholders..."
               aria-label="Search stakeholders"
               style={{
@@ -493,7 +583,7 @@ export const StakeholdersView: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ flex: '1 1 auto', overflow: 'auto', minHeight: 0 }}>
+        <div className="stakeholders-table-wrap" style={{ flex: '1 1 auto', overflow: 'auto', minHeight: 0 }}>
         <Table>
           <Thead>
             <Tr>
@@ -713,7 +803,7 @@ export const StakeholdersView: React.FC = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => deleteStakeholder(s.id)}
+                          onClick={() => removeStakeholder(s.id)}
                           aria-label={`Delete ${s.name || 'stakeholder'}`}
                           style={{
                             display: 'inline-flex',
@@ -783,7 +873,7 @@ export const StakeholdersView: React.FC = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => deleteStakeholder(s.id)}
+                          onClick={() => removeStakeholder(s.id)}
                           aria-label={`Delete ${s.name || 'stakeholder'}`}
                           style={{
                             display: 'inline-flex',
